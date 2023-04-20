@@ -49,19 +49,19 @@ switch_interrupt_handler()
 
 // axis zero for col, axis 1 for row
 // ball 
-short ballPos[2] = {screenWidth-15, screenHeight-20}, nextPos[2] = {screenWidth-14, screenHeight-20};
-short colVelocity = -4, rowVelocity = -5;
-short colLimits[2] = {0 , screenWidth};
-short rowLimits[2] = {0 , screenHeight}; 
+int ballPos[2] = {screenWidth-15, screenHeight-20}, nextPos[2] = {screenWidth-14, screenHeight-20};
+int colVelocity = -4, rowVelocity = -5;
+int colLimits[2] = {0 , screenWidth};
+int rowLimits[2] = {0 , screenHeight}; 
 
 // paddles
-short paddlePos1[2] = {(screenWidth/2) + 35, screenHeight-6};
-short futurePP1[2] = {(screenWidth/2) + 36, screenHeight-6};
+int paddlePos1[2] = {(screenWidth/2) + 35, screenHeight-6};
+int futurePP1[2] = {(screenWidth/2) + 36, screenHeight-6};
 
-short paddlePos2[2] = {10, 3};
-short futurePP2[2] = {11, 3};
+int paddlePos2[2] = {10, 3};
+int futurePP2[2] = {11, 3};
 
-short paddleVelocity = 2;
+int paddleVelocity = 2;
 
 void
 draw_ball(int col, int row, unsigned short color)
@@ -69,13 +69,26 @@ draw_ball(int col, int row, unsigned short color)
   
   fillRectangle(col-1, row-1, 6, 6, color);
 }
-
+int paddle_location[2] = {0,0};
 void
-draw_paddle(int col , int row, u_int color){
+draw_paddle(int col , int row, unsigned short color)
+{
 
+  paddle_location[0] = col - 1;
+  paddle_location[1] = col + 20;
+  
   fillRectangle(col-1, row-1, 20, 5, color);
 
 }
+
+char ball_paddle_collision()
+{
+  if((ballPos[0] >= paddle_location[0]) && (ballPos[0] <= paddle_location[1]))
+    if( (ballPos[1] + 6) >= (screenHeight - 6) && (ballPos[1] <= (screenHeight-1)))
+      return 1;
+  return 0;
+}
+
 
 void
 screen_update_paddle1(){
@@ -103,7 +116,7 @@ screen_update_paddle2(){
 void
 screen_update_ball()
 {
-  for (char axis = 0; axis < 2; axis ++)
+  for (int axis = 0; axis < 2; axis ++)
 
     if (ballPos[axis] != nextPos[axis]) /* position changed? */
 
@@ -115,50 +128,44 @@ screen_update_ball()
 
   draw_ball(ballPos[0], ballPos[1], COLOR_BLUE); /* erase */
 
-  for (char axis = 0; axis < 2; axis ++)
+  for (int axis = 0; axis < 2; axis ++)
 
     ballPos[axis] = nextPos[axis];
 
   draw_ball(ballPos[0], ballPos[1], COLOR_WHITE); /* draw */
 }
+void
+paddle1_left()
+{
+  int oldCol = futurePP1[0];
+  int newCol = oldCol - colVelocity;
+  if( newCol > (colLimits[0]))
+    futurePP1[0] = newCol;
+}
+void
+paddle1_right()
+{
+  int oldCol = futurePP1[0];
+  int newCol = oldCol + colVelocity;
+  if( newCol < (colLimits[1] - 20))
+    futurePP1[0] = newCol;
+}
+
 
 void ball_boundary(){
-  short oldCol = nextPos[0];
-  short newCol = oldCol + colVelocity;
+  int oldCol = nextPos[0];
+  int newCol = oldCol + colVelocity;
 
-  short oldRow = nextPos[1];
-  short newRow = oldRow + rowVelocity;
+  int oldRow = nextPos[1];
+  int newRow = oldRow + rowVelocity;
   
   if (newCol <= colLimits[0] || newCol >= colLimits[1]){
     colVelocity = -colVelocity;
   }
-  // check collision with paddle 1
-  if (ballPos[1] >= paddlePos1[1] && ballPos[1] <= paddlePos1[1] + 5) {
-
-    if (ballPos[0] >= paddlePos1[0] - 5 && ballPos[0] <= paddlePos1[0] + 10) {
-
-      colVelocity = -colVelocity;
-
-      rowVelocity = -rowVelocity;
-
-    }
-
+  if(ball_paddle_collision()){
+    rowVelocity = -rowVelocity;
   }
-
-
-
-  // Check collision with paddle 2
-
-  if (ballPos[1] <= paddlePos2[1] + 5 && ballPos[1] >= paddlePos2[1]) {
-
-    if (ballPos[0] >= paddlePos2[0] - 5 && ballPos[0] <= paddlePos2[0] + 10) {
-
-      colVelocity = -colVelocity;
-
-      rowVelocity = -rowVelocity;
-
-    }
-  }
+  
 
   newCol = oldCol + colVelocity;  // new col result
 
@@ -178,25 +185,14 @@ void wdt_c_handler()
   secCount ++;
   if (secCount >= 25) {		/* 10/sec */
    
-    {
       /* move ball */
-      //detects_collision();
-      ball_boundary();
-      
-    }
-
-    {				
-      if (switches & SW2) 
-      if (switches & SW1) 
-      if (step <= 30)
-	step ++;
-      else
-	step = 0;
       secCount = 0;
-    }
-    if (switches & SW4) return;
-    redrawScreen = 1;
-  }
+      ball_boundary();
+      redrawScreen = 1;
+  }				
+  if (switches & SW1) paddle1_left();
+  if (switches & SW2) paddle1_right();
+      
 }
   
 void update_shape();
