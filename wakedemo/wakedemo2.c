@@ -1,5 +1,4 @@
 #include <msp430.h>
-#include <stdlib.h>
 #include <libTimer.h>
 #include "lcdutils.h"
 #include "lcddraw.h"
@@ -44,26 +43,25 @@ switch_interrupt_handler()
 {
   char p2val = switch_update_interrupt_sense();
   switches = ~p2val & SWITCHES;
+
 }
 
 
 // axis zero for col, axis 1 for row
+// ball 
+short ballPos[2] = {screenWidth-15, screenHeight-20}, nextPos[2] = {screenWidth-14, screenHeight-20};
+short colVelocity = -4, rowVelocity = -5;
+short colLimits[2] = {0 , screenWidth};
+short rowLimits[2] = {0 , screenHeight}; 
 
-short ballPos[2] = {(screenWidth/2)*1.5,screenHeight-6}, futurePos[2] = {((screenWidth/2)*1.5)+1, screenHeight-5};
-short colVelocity = 4, rowVelocity = 4;
-short colLimits[2] = {1 , screenWidth-5};
-short rowLimits[2] = {0 , screenHeight-5}; 
+// paddles
+short paddlePos1[2] = {(screenWidth/2) + 35, screenHeight-6};
+short futurePP1[2] = {(screenWidth/2) + 36, screenHeight-6};
 
-short paddlePos1[2] = {(screenWidth/2)*1.5,screenHeight-5};
-short futurePP1[2] = {(screenWidth/2)*1.5,screenHeight-5};
-
-short paddlePos2[2] = {(screenWidth/2)*0.5,0};
-short futurePP2[2] = {(screenWidth/2)*0.5,0};
+short paddlePos2[2] = {10, 3};
+short futurePP2[2] = {11, 3};
 
 short paddleVelocity = 2;
-
-
-short redrawScreen = 1;
 
 void
 draw_ball(int col, int row, unsigned short color)
@@ -79,15 +77,6 @@ draw_paddle(int col , int row, u_int color){
 
 }
 
-char
-ball_paddle_collision(){
-
-  if( ballPos[1] >= 5 && ballPos[1] <= 20 ){
-    if(ballPos[0]+6 >= screenHeight-7)
-      return 1;
-    return 0;
-  }
-}
 void
 screen_update_paddle1(){
 
@@ -95,7 +84,7 @@ screen_update_paddle1(){
 
   paddlePos1[1] = futurePP1[1];
 
-  draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_BLUE);
+  draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_WHITE);
 
 
 }
@@ -106,7 +95,7 @@ screen_update_paddle2(){
 
   paddlePos2[1] = futurePP2[1];
 
-  draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_BLUE);
+  draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_WHITE);
 
 
 }
@@ -116,7 +105,7 @@ screen_update_ball()
 {
   for (char axis = 0; axis < 2; axis ++)
 
-    if (ballPos[axis] != futurePos[axis]) /* position changed? */
+    if (ballPos[axis] != nextPos[axis]) /* position changed? */
 
       goto redraw;
 
@@ -128,83 +117,85 @@ screen_update_ball()
 
   for (char axis = 0; axis < 2; axis ++)
 
-    ballPos[axis] = futurePos[axis];
+    ballPos[axis] = nextPos[axis];
 
   draw_ball(ballPos[0], ballPos[1], COLOR_WHITE); /* draw */
 }
 
 void ball_boundary(){
-  short oldCol = futurePos[0];
+  short oldCol = nextPos[0];
   short newCol = oldCol + colVelocity;
 
-  short oldRow = futurePos[0];
-  short newRow = newRow + rowVelocity;
+  short oldRow = nextPos[1];
+  short newRow = oldRow + rowVelocity;
   
-  if (newCol < colLimits[0] || newCol >= colLimits[1]){
+  if (newCol <= colLimits[0] || newCol >= colLimits[1]){
     colVelocity = -colVelocity;
   }
-  if (ball_paddle_collision()){
-    rowVelocity = -rowVelocity;
+  // check collision with paddle 1
+  if (ballPos[1] >= paddlePos1[1] && ballPos[1] <= paddlePos1[1] + 5) {
+
+    if (ballPos[0] >= paddlePos1[0] - 5 && ballPos[0] <= paddlePos1[0] + 10) {
+
+      colVelocity = -colVelocity;
+
+      rowVelocity = -rowVelocity;
+
+    }
+
   }
-  //  if (ball_paddle2_collision()){
-  //  rowVelocity = -rowVelocity;
-  // }
 
-}
-void
-paddle1_left(){
-  short oldCol = futurePos[0];
-  short newCol = oldCol + (-paddleVelocity);
-  if(newCol > colLimits[0]){
-    futurePos[1] = newCol;
+
+
+  // Check collision with paddle 2
+
+  if (ballPos[1] <= paddlePos2[1] + 5 && ballPos[1] >= paddlePos2[1]) {
+
+    if (ballPos[0] >= paddlePos2[0] - 5 && ballPos[0] <= paddlePos2[0] + 10) {
+
+      colVelocity = -colVelocity;
+
+      rowVelocity = -rowVelocity;
+
+    }
   }
+
+  newCol = oldCol + colVelocity;  // new col result
+
+  newRow = oldRow  + rowVelocity; // new row result
+  
+  nextPos[0] = newCol;  
+  nextPos[1] = newRow;
+  
 }
 
-void
-paddle1_right(){
-  short oldCol = futurePos[0];
-  short newCol = newCol + paddleVelocity;
-  if(newCol < colLimits[1]-20)
-    futurePos[1] = newCol;
-}
-void
-paddle2_left(){
-  short oldCol = futurePos[0];
-  short newCol = oldCol + paddleVelocity;
-  if(newCol > colLimits[1]-20){
-    futurePos[1] = newCol;
-  }
-}
-
-void
-paddle2_right(){
-  short oldCol = futurePos[0];
-  short newCol = newCol + (-paddleVelocity);
-  if(newCol < colLimits[0])
-    futurePos[1] = newCol;
-}
-
+short redrawScreen = 1;
 void wdt_c_handler()
 {
+  
   static int secCount = 0;
 
-  secCount ++; 
+  secCount ++;
   if (secCount >= 25) {		/* 10/sec */
-   secCount = 0;
-     
-    ball_boundary();
-    redrawScreen = 1;
+   
+    {
+      /* move ball */
+      //detects_collision();
+      ball_boundary();
       
-    
-    if (switches & SW1) paddle1_left();
-    if (switches & SW2) paddle1_right();
-    if (switches & SW3) paddle2_right();
-    if (switches & SW4) paddle2_left();
-    if (step<= 15)
-      step ++;
-    else
-      step = 0;
-     
+    }
+
+    {				
+      if (switches & SW2) 
+      if (switches & SW1) 
+      if (step <= 30)
+	step ++;
+      else
+	step = 0;
+      secCount = 0;
+    }
+    if (switches & SW4) return;
+    redrawScreen = 1;
   }
 }
   
