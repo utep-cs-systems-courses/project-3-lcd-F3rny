@@ -51,15 +51,15 @@ switch_interrupt_handler()
 // ball 
 int ballPos[2] = {screenWidth-15, screenHeight-20}, nextPos[2] = {screenWidth-14, screenHeight-20};
 int colVelocity = -4, rowVelocity = -5;
-int colLimits[2] = {0 , screenWidth};
-int rowLimits[2] = {0 , screenHeight}; 
+int colLimits[2] = {5 , screenWidth-15};
+int rowLimits[2] = {20 , screenHeight}; 
 
 // paddles
-int paddlePos1[2] = {(screenWidth/2) + 35, screenHeight-6};
-int futurePP1[2] = {(screenWidth/2) + 36, screenHeight-6};
+int paddlePos1[2] = {(screenWidth/2) + 30, screenHeight-6};
+int futurePP1[2] = {(screenWidth/2) + 31, screenHeight-6};
 
-int paddlePos2[2] = {15, 5};
-int futurePP2[2] = {16, 5};
+int paddlePos2[2] = {15, 35};
+int futurePP2[2] = {16, 35};
 
 int paddleVelocity = 5;
 
@@ -79,70 +79,46 @@ draw_paddle(int col , int row, unsigned short color)
 char ball_paddle_collision()
 {
   int ballLeft = ballPos[0] - 1;  // left edge of ball
-
   int ballRight = ballPos[0] + 6; // right edge of ball
-
   int ballTop = ballPos[1] - 1;   // top edge of ball
-
   int ballBottom = ballPos[1] + 6; // bottom edge of ball
-
   int paddle1Left = paddlePos1[0] - 1;  // left edge of paddle
-
   int paddle1Right = paddlePos1[0] + 20; // right edge of paddle
-
   int paddle1Top = paddlePos1[1] - 1;   // top edge of paddle
-
   int paddle1Bottom = paddlePos1[1] + 5; // bottom edge of paddle
-
-
 
   // check for intersection of x-coordinate ranges
 
   if (ballRight >= paddle1Left && ballLeft <= paddle1Right) {
-
     // check for intersection of y-coordinate ranges
-
     if (ballBottom >= paddle1Top && ballTop <= paddle1Bottom) {
-
       return 1; // collision detected
-
     }
-
   }
-  
   return 0; // no collision detected
 }
+
 char
 ball_paddle2_collision()
 {
   int ballLeft = ballPos[0] - 1;  // left edge of ball
-
   int ballRight = ballPos[0] + 6; // right edge of ball
-
   int ballTop = ballPos[1] - 1;   // top edge of ball
-
   int ballBottom = ballPos[1] + 6; // bottom edge of ball
-  
   int paddle2Left = paddlePos2[0] - 1;  // left edge of paddle
-
   int paddle2Right = paddlePos2[0] + 20; // right edge of paddle
-
   int paddle2Top = paddlePos2[1] - 1;   // top edge of paddle
-
   int paddle2Bottom = paddlePos2[1] + 5; // bottom edge of paddle
 
   if(ballRight >= paddle2Left && ballLeft <= paddle2Right){
-    
     if( ballBottom <= paddle2Top && ballTop >= paddle2Bottom) {
-
       return 1;
-
     }
-    
   }
   return 0;
- 
+
 }
+
 void
 screen_update_paddle1(){
 
@@ -227,7 +203,7 @@ paddle1_right()
 {
   int oldCol = futurePP1[0];
   int newCol = oldCol + paddleVelocity;
-  if( newCol < (colLimits[1] - 20))
+  if( newCol < (colLimits[1] - 10))
     futurePP1[0] = newCol;
 }
 void
@@ -235,7 +211,7 @@ paddle2_left()
 {
   int oldCol = futurePP2[0];
   int newCol = oldCol + paddleVelocity;
-  if(newCol < (colLimits[1]-20)){
+  if(newCol < (colLimits[1] - 20)){
     futurePP2[0] = newCol;
   }
    
@@ -245,7 +221,7 @@ paddle2_right()
 {
   int oldCol = futurePP2[0];
   int newCol = oldCol - paddleVelocity;
-  if( newCol > (colLimits[0]))
+  if( newCol > (colLimits[0] + 5))
     futurePP2[0] = newCol;
 }
 
@@ -257,18 +233,15 @@ void ball_boundary(){
   int oldRow = nextPos[1];
   int newRow = oldRow + rowVelocity;
   
-  if(ball_paddle_collision()){
-    rowVelocity = -rowVelocity;
-  }
-  if( ball_paddle2_collision()){
+  if(ball_paddle_collision() || ball_paddle2_collision()){
     rowVelocity = -rowVelocity;
   }
   if (newCol <= colLimits[0] || newCol >= colLimits[1]){
     colVelocity = -colVelocity;
   }
-  //if (newRow <= rowLimits[0] || newRow >= rowLimits[1]){
-    //rowVelocity = -rowVelocity;
-    //  }
+  if (newRow <= rowLimits[0] || newRow >= rowLimits[1]){
+  rowVelocity = -rowVelocity;
+  }
   
  
   newCol = oldCol + colVelocity;  // new col result
@@ -290,15 +263,15 @@ void wdt_c_handler()
   if (secCount >= 25) {		/* 10/sec */
    
       /* move ball */
-    ball_boundary();
-      		
+   ball_boundary();
+       		
     if (switches & SW1) paddle1_left();
     if (switches & SW2) paddle1_right();
     if (switches & SW3) paddle2_right();
     if (switches & SW4) paddle2_left();
 
-      secCount = 0;
-      redrawScreen = 1; 
+    secCount = 0;
+    redrawScreen = 1; 
   }
 }
   
