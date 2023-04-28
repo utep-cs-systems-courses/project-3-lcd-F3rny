@@ -3,6 +3,7 @@
 #include "lcdutils.h"
 #include "lcddraw.h"
 #include "tennis.h"
+#include "sound_effect.h"
 
 #define LED BIT6/* note that bit zero req'd for display */
 
@@ -17,6 +18,7 @@ char blue = 31, green = 0, red = 31;
 unsigned char step = 0;
 int state = 0;
 char button_pressed = 0;
+
 
 void paddle1_left();
 void paddle1_right();
@@ -75,10 +77,9 @@ switch_interrupt_handler()
     button_pressed ++;
     if(button_pressed == 1 && state == 0){
       state = 1;
-      button_pressed = 2;
-      //state = 2;
+      button_pressed = 1;
     }
-    if(button_pressed > 1 && state == 2) {
+    if(button_pressed >= 1 && state == 2) {
       paddle1_left();
     }
   }
@@ -122,19 +123,18 @@ int futurePP2[2] = {16, 35};
 int paddleVelocity = 10;
 
 void update_shape();
-
 void
 state_advance(){
   switch(state){
   case 0:
     
     tennisCourt();
-    drawString11x16((centerCol/2)-5, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    drawString11x16((centerCol/2)+10, (centerRow/2)-5, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    drawString11x16((centerCol/2)+2, (centerRow/2)+25, "START", COLOR_DARK_GREEN, COLOR_RED);
-    //drawString5x7(centerCol-20, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    //drawString5x7(centerCol-15, (centerRow/2)-15, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    //drawString5x7((centerCol-15), (centerRow+45), "START", COLOR_RED, COLOR_BLACK);
+    //drawString11x16((centerCol/2)-5, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
+    //drawString11x16((centerCol/2)+10, (centerRow/2)-5, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
+    //drawString11x16((centerCol/2)+2, (centerRow/2)+25, "START", COLOR_DARK_GREEN, COLOR_RED);
+    drawString5x7(centerCol-20, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
+    drawString5x7(centerCol-15, (centerRow/2)-15, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
+    drawString5x7((centerCol-15), (centerRow+45), "START", COLOR_RED, COLOR_BLACK);
    
 
    button_pressed = 0;
@@ -147,7 +147,9 @@ state_advance(){
     border();
     mainCourt();
     update_shape();
+   
     break;
+    
   } 
 }
 void
@@ -275,6 +277,35 @@ screen_update_ball()
 
   draw_ball(ballPos[0], ballPos[1], COLOR_WHITE); /* draw */
 }
+
+void
+reset_game(){
+
+  ballPos[0] = screenWidth-15; 
+  ballPos[1] = screenHeight-20;
+  nextPos[0] = screenWidth-14;
+  nextPos[1] = screenHeight-20;
+
+    
+  paddlePos1[0] = (screenWidth/2) + 30;
+  paddlePos1[1] = screenHeight-8;
+  futurePP1[0] = (screenWidth/2) + 31;
+  futurePP1[1] = screenHeight-8;
+    
+  paddlePos2[0] = 15;
+  paddlePos2[1] = 35;
+
+  futurePP2[0] = 16;
+  futurePP2[1] = 35;
+
+  colVelocity = -4;
+  rowVelocity = -5;
+
+}
+
+
+
+
 void
 paddle1_left()
 {
@@ -321,17 +352,19 @@ void ball_boundary(){
   int newRow = oldRow + rowVelocity;
   
   if(ball_paddle_collision()){
+    collision(); // sound
     rowVelocity = -rowVelocity;
   }
   else if( ball_paddle2_collision()){
-   rowVelocity = -rowVelocity;
+    collision(); // sound
+    rowVelocity = -rowVelocity;
+   
   } 
   else if (newCol <= colLimits[0] || newCol >= colLimits[1]){
     colVelocity = -colVelocity;
   }
-  else if (newRow <= rowLimits[0] || newRow >= rowLimits[1]){
-    rowVelocity = -rowVelocity;
-    }
+   
+ 
   newCol = oldCol + colVelocity;  // new col result
 
   newRow = oldRow  + rowVelocity; // new row result
@@ -354,6 +387,7 @@ void wdt_c_handler()
    
       /* move ball */
    ball_boundary();
+   
    secCount = 0;
    redrawScreen = 1; 
   }
@@ -366,6 +400,7 @@ main()
   P1DIR |= LED;		/**< Green led on when CPU on */
   P1OUT |= LED;
   configureClocks();
+  buzzer_init();
   lcd_init();
   switch_init();
   
@@ -390,13 +425,22 @@ void
 update_shape()
 
 {
+   int ballTop = ballPos[1] - 1;
+   int ballBottom = ballPos[1] + 6;
+  if(ballTop <= rowLimits[0] || ballBottom >= rowLimits[1]){
+    draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_DARK_GREEN);
+    draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_DARK_GREEN);
 
-  screen_update_ball();
+    reset_game();
+  }
+  if(button_pressed > 0){
+    screen_update_ball();
 
-  screen_update_paddle1();
+    screen_update_paddle1();
 
-  screen_update_paddle2();
-
+    screen_update_paddle2();
+  }
+  
 }
 void
 __interrupt_vec(PORT2_VECTOR) Port_2(){

@@ -22,7 +22,7 @@ install: libLcd.a
 clean:
 	rm -f libLcd.a *.o *.elf
 
-main.elf: ${COMMON_OBJECTS} main.o libLcd.a wdt_handler.o
+main.elf: ${COMMON_OBJECTS} main.o libLcd.a wdt_handler.o buzzer.o sound_effect.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lTimer -lLcd  
 load: main.elf
 	msp430loader.sh $^
