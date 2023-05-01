@@ -1,8 +1,14 @@
 #include <msp430.h>
 #include <libTimer.h>
+#include <stdio.h>
 #include "lcdutils.h"
 #include "lcddraw.h"
+#include "ball.h"
+#include "paddles.h"
 #include "tennis.h"
+#include "collisions.h"
+#include "score_board.h"
+#include "buzzer.h"
 #include "sound_effect.h"
 
 #define LED BIT6/* note that bit zero req'd for display */
@@ -14,16 +20,9 @@
 
 #define SWITCHES 15
 
-char blue = 31, green = 0, red = 31;
 unsigned char step = 0;
 int state = 0;
 char button_pressed = 0;
-
-
-void paddle1_left();
-void paddle1_right();
-void paddle2_left();
-void paddle2_right();
 
 static char
 switch_update_interrupt_sense()
@@ -106,21 +105,6 @@ switch_interrupt_handler()
   }
 }
 
-// axis zero for col, axis 1 for row
-// ball 
-int ballPos[2] = {screenWidth-15, screenHeight-20}, nextPos[2] = {screenWidth-14, screenHeight-20};
-int colVelocity = -4, rowVelocity = -5;
-int colLimits[2] = {5 , screenWidth-10};
-int rowLimits[2] = {20 , screenHeight+5}; 
-
-// paddles
-int paddlePos1[2] = {(screenWidth/2) + 30, screenHeight-8};
-int futurePP1[2] = {(screenWidth/2) + 31, screenHeight- 8};
-
-int paddlePos2[2] = {15, 35};
-int futurePP2[2] = {16, 35};
-
-int paddleVelocity = 10;
 
 void update_shape();
 void
@@ -129,14 +113,10 @@ state_advance(){
   case 0:
     
     tennisCourt();
-    //drawString11x16((centerCol/2)-5, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    //drawString11x16((centerCol/2)+10, (centerRow/2)-5, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
-    //drawString11x16((centerCol/2)+2, (centerRow/2)+25, "START", COLOR_DARK_GREEN, COLOR_RED);
     drawString5x7(centerCol-20, (centerRow/2)-25, "TENNIS", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
     drawString5x7(centerCol-15, (centerRow/2)-15, "GAME", COLOR_NAVY, COLOR_DARK_GREEN); //Title Card
     drawString5x7((centerCol-15), (centerRow+45), "START", COLOR_RED, COLOR_BLACK);
    
-
    button_pressed = 0;
    break;
   case 1:
@@ -146,136 +126,12 @@ state_advance(){
   case 2:
     border();
     mainCourt();
+    
     update_shape();
-   
+    
     break;
     
   } 
-}
-void
-draw_ball(int col, int row, unsigned short color)
-{
-  
-  fillRectangle(col-1, row-1, 6, 6, color);
-}
-void
-draw_paddle(int col , int row, unsigned short color)
-{
-  fillRectangle(col-1, row-1, 20, 5, color);
-
-}
-
-char ball_paddle_collision()
-{
-  int ballLeft = ballPos[0] - 1;  // left edge of ball
-  int ballRight = ballPos[0] + 6; // right edge of ball
-  int ballTop = ballPos[1] - 1;   // top edge of ball
-  int ballBottom = ballPos[1] + 6; // bottom edge of ball
-  int paddle1Left = paddlePos1[0] - 1;  // left edge of paddle
-  int paddle1Right = paddlePos1[0] + 20; // right edge of paddle
-  int paddle1Top = paddlePos1[1] - 1;   // top edge of paddle
-  int paddle1Bottom = paddlePos1[1] + 5; // bottom edge of paddle
-
-  // check for intersection of x-coordinate ranges
-
-  if (ballRight >= paddle1Left && ballLeft <= paddle1Right) {
-    // check for intersection of y-coordinate ranges
-    if (ballBottom >= paddle1Top && ballTop <= paddle1Bottom) {
-      return 1; // collision detected
-    }
-  }
-  return 0; // no collision detected
-}
-
-char
-ball_paddle2_collision()
-{
-  int ballLeft = ballPos[0] - 1;  // left edge of ball
-  int ballRight = ballPos[0] + 6; // right edge of ball
-  int ballTop = ballPos[1] - 1;   // top edge of ball
-  int ballBottom = ballPos[1] + 6; // bottom edge of ball
-  int paddle2Left = paddlePos2[0] - 1;  // left edge of paddle
-  int paddle2Right = paddlePos2[0] + 20; // right edge of paddle
-  int paddle2Top = paddlePos2[1] - 1;   // top edge of paddle
-  int paddle2Bottom = paddlePos2[1] + 5; // bottom edge of paddle
-
-  if(ballRight >= paddle2Left && ballLeft <= paddle2Right){
-    if( ballBottom >= paddle2Top && ballTop <= paddle2Bottom) {
-      return 1;
-    }
-  }
-  return 0;
-
-}
-
-void
-screen_update_paddle1(){
-
-  for (int axis = 0; axis < 2; axis ++)
-
-    if (paddlePos1[axis] != futurePP1[axis]) /* position changed? */
-
-      goto redraw;
-
-  return;/* nothing to do */
-
- redraw:
-
-  draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_DARK_GREEN); 
-
-  for (int axis = 0; axis < 2; axis ++)
-
-    paddlePos1[axis] = futurePP1[axis];
-
-  draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_WHITE);
-
-
-}
-void
-screen_update_paddle2(){
-
-
-  for (int axis = 0; axis < 2; axis ++)
-
-    if (paddlePos2[axis] != futurePP2[axis]) /* position changed? */
-
-      goto redraw;
-
-  return;/* nothing to do */
-
- redraw:
-
-  draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_DARK_GREEN); 
-
-  for (int axis = 0; axis < 2; axis++)
-
-    paddlePos2[axis] = futurePP2[axis];
-
-  draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_WHITE);
-
-
-}
-
-void
-screen_update_ball()
-{
-  for (int axis = 0; axis < 2; axis ++)
-
-    if (ballPos[axis] != nextPos[axis]) /* position changed? */
-
-      goto redraw;
-
-  return;/* nothing to do */
-
- redraw:
-
-  draw_ball(ballPos[0], ballPos[1], COLOR_DARK_GREEN); /* erase */
-
-  for (int axis = 0; axis < 2; axis ++)
-
-    ballPos[axis] = nextPos[axis];
-
-  draw_ball(ballPos[0], ballPos[1], COLOR_WHITE); /* draw */
 }
 
 void
@@ -301,77 +157,6 @@ reset_game(){
   colVelocity = -4;
   rowVelocity = -5;
 
-}
-
-
-
-
-void
-paddle1_left()
-{
-  int oldCol = futurePP1[0];
-  int newCol = oldCol - paddleVelocity;
-  if(newCol >= colLimits[0]){
-    futurePP1[0] = newCol;
-  }
-   
-}
-void
-paddle1_right()
-{
-  int oldCol = futurePP1[0];
-  int newCol = oldCol + paddleVelocity;
-  if( newCol <= (colLimits[1])-15)
-    futurePP1[0] = newCol;
-}
-void
-paddle2_left()
-{
-  int oldCol = futurePP2[0];
-  int newCol = oldCol + paddleVelocity;
-  if(newCol <= (colLimits[1]-15)){
-    futurePP2[0] = newCol;
-  }
-   
-}
-void
-paddle2_right()
-{
-  int oldCol = futurePP2[0];
-  int newCol = oldCol - paddleVelocity;
-  if( newCol > (colLimits[0]))
-    futurePP2[0] = newCol;
-}
-
-
-void ball_boundary(){
-  int oldCol = nextPos[0];
-  int newCol = oldCol + colVelocity;
-
-  int oldRow = nextPos[1];
-  int newRow = oldRow + rowVelocity;
-  
-  if(ball_paddle_collision()){
-    collision(); // sound
-    rowVelocity = -rowVelocity;
-  }
-  else if( ball_paddle2_collision()){
-    collision(); // sound
-    rowVelocity = -rowVelocity;
-   
-  } 
-  else if (newCol <= colLimits[0] || newCol >= colLimits[1]){
-    colVelocity = -colVelocity;
-  }
-   
- 
-  newCol = oldCol + colVelocity;  // new col result
-
-  newRow = oldRow  + rowVelocity; // new row result
-  
-  nextPos[0] = newCol;  
-  nextPos[1] = newRow;
-  
 }
 
 
@@ -425,20 +210,37 @@ void
 update_shape()
 
 {
-   int ballTop = ballPos[1] - 1;
-   int ballBottom = ballPos[1] + 6;
-  if(ballTop <= rowLimits[0] || ballBottom >= rowLimits[1]){
+  int ballLeft = ballPos[0] - 1;
+  int ballRight = ballPos[0] + 6;
+  int ballTop = ballPos[1] - 1;
+  int ballBottom = ballPos[1] + 6;
+  if(ballTop <= rowLimits[0] || ballBottom >= rowLimits[1] || ballLeft < colLimits[0]-1 || ballRight > colLimits[1] + 2 ){
+    if(ballTop <= rowLimits[0]){
+      score1++;
+      lost();
+      player1_score();
+    }
+    if(ballBottom >= rowLimits[1]){
+      score2++;
+      lost();
+      player2_score();
+    }
+    
     draw_paddle(paddlePos1[0], paddlePos1[1], COLOR_DARK_GREEN);
     draw_paddle(paddlePos2[0], paddlePos2[1], COLOR_DARK_GREEN);
-
+    
     reset_game();
   }
+  
   if(button_pressed > 0){
     screen_update_ball();
 
     screen_update_paddle1();
 
     screen_update_paddle2();
+
+    player1_score();
+    player2_score();
   }
   
 }
