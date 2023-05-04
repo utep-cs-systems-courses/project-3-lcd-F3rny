@@ -17,7 +17,7 @@ int paddleVelocity = 10;
 void
 draw_paddle(int col , int row, unsigned short color)
 {
-  fillRectangle(col-1, row-1, 30, 10, color);
+  fillRectangle(col-1, row-1, 30, 8, color);
 
 }
 

@@ -23,6 +23,13 @@ clean:
 	rm -f libLcd.a *.o *.elf
 
 main.elf: ${COMMON_OBJECTS} main.o libLcd.a wdt_handler.o buzzer.o sound_effect.o ball.o paddles.o collisions.o score_board.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lTimer -lLcd
+
+main-s.elf: ${COMMON_OBJECTS} main.o libLcd.a wdt_handler.o buzzer-s.o sound_effect-s.o ball.o paddles.o collisions.o score_board.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lTimer -lLcd  
+
 load: main.elf
+	msp430loader.sh $^
+
+load-s: main-s.elf
 	msp430loader.sh $^

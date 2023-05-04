@@ -2,5 +2,6 @@
 #define sound_effect_included
 
 void collision();
+void lost();
 
 #endif // included
