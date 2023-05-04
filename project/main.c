@@ -76,7 +76,7 @@ switch_interrupt_handler()
     button_pressed ++;
     if(button_pressed == 1 && state == 0){
       state = 1;
-      button_pressed = 1;
+      // button_pressed = 1;
     }
     if(button_pressed >= 1 && state == 2) {
       paddle1_left();

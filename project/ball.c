@@ -50,13 +50,10 @@ void ball_boundary(){
   if(ball_paddle_collision()){
     collision(); // sound
     rowVelocity = -rowVelocity;
-    nextPos[1] = newRow + rowVelocity;
   }
   else if( ball_paddle2_collision()){
     collision(); // sound
     rowVelocity = -rowVelocity;
-    
-    nextPos[1] = newRow + rowVelocity;
   } 
   else if (newCol <= colLimits[0] || newCol >= colLimits[1]){
     colVelocity = -colVelocity;

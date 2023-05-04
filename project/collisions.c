@@ -13,9 +13,9 @@ char ball_paddle_collision()
   int ballTop = ballPos[1] - 1;   // top edge of ball
   int ballBottom = ballPos[1] + 6; // bottom edge of ball
   int paddle1Left = paddlePos1[0] - 1;  // left edge of paddle
-  int paddle1Right = paddlePos1[0] + 30; // right edge of paddle
+  int paddle1Right = paddlePos1[0] + 20; // right edge of paddle
   int paddle1Top = paddlePos1[1] - 1;   // top edge of paddle
-  int paddle1Bottom = paddlePos1[1] + 8; // bottom edge of paddle
+  int paddle1Bottom = paddlePos1[1] + 3; // bottom edge of paddle
 
   // check for intersection of x-coordinate ranges
 
@@ -36,9 +36,9 @@ ball_paddle2_collision()
   int ballTop = ballPos[1] - 1;   // top edge of ball
   int ballBottom = ballPos[1] + 6; // bottom edge of ball
   int paddle2Left = paddlePos2[0] - 1;  // left edge of paddle
-  int paddle2Right = paddlePos2[0] + 30; // right edge of paddle
+  int paddle2Right = paddlePos2[0] + 20; // right edge of paddle
   int paddle2Top = paddlePos2[1] - 1;   // top edge of paddle
-  int paddle2Bottom = paddlePos2[1] + 8; // bottom edge of paddle
+  int paddle2Bottom = paddlePos2[1] + 3; // bottom edge of paddle
 
   if(ballRight >= paddle2Left && ballLeft <= paddle2Right){
     if( ballBottom >= paddle2Top && ballTop <= paddle2Bottom) {

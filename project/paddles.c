@@ -12,12 +12,12 @@ int futurePP1[2] = {(screenWidth/2) + 31, screenHeight- 8};
 int paddlePos2[2] = {15, 35};
 int futurePP2[2] = {16, 35};
 
-int paddleVelocity = 10;
+int paddleVelocity = 15;
 
 void
 draw_paddle(int col , int row, unsigned short color)
 {
-  fillRectangle(col-1, row-1, 30, 8, color);
+  fillRectangle(col-1, row-1, 20, 3, color);
 
 }
 

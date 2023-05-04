@@ -1,4 +1,4 @@
-all: libLcd.a main.elf
+all: libLcd.a main.elf main-s.elf
 
 CPU             = msp430g2553
 CFLAGS          = -mmcu=${CPU} -Os -I../h 
